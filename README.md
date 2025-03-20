@@ -1,4 +1,4 @@
-## Sign Language Translator  
+### Sign Language Translator  
 A project for translating sign language into text.  
 
 ## 📜 Features  
