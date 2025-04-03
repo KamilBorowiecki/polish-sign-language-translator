@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:camera/camera.dart';
 
 class RecordingPage extends StatefulWidget {
   const RecordingPage({super.key});
@@ -8,15 +9,43 @@ class RecordingPage extends StatefulWidget {
 }   
 
 class _RecordingPage extends State<RecordingPage> {
+  CameraController? _cameraController;
+  List<CameraDescription>? cameras;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeCamera();
+  }
+
+  @override
+  void dispose() {
+    _cameraController?.dispose();
+    super.dispose();
+  }
+
+  Future<void> _initializeCamera() async {
+    cameras = await availableCameras();
+    if (cameras != null && cameras!.isNotEmpty) {
+      _cameraController = CameraController(
+        cameras![0], 
+        ResolutionPreset.medium,
+      );
+      await _cameraController!.initialize();
+      if (mounted) {
+        setState(() {});
+      }
+    }
+  } 
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.teal[300],
+      backgroundColor: Colors.green[300],
       appBar: AppBar(
-        backgroundColor: Colors.teal[500],
+        backgroundColor: Colors.green[600],
         centerTitle: true,
-        title: const Text("H O M E   P A G E",
+        title: const Text("R E C O R D I N G   P A G E",
         style: TextStyle(
                 color: Colors.white,
                 fontSize: 20,
@@ -28,6 +57,9 @@ class _RecordingPage extends State<RecordingPage> {
         children: [
           SizedBox(height: 50),
           Align(
+            // po nacisnieciu w kamere zaczyna nagrywac 
+            // po ponowym nacisnieciu przestacje 
+            // tekst w postaci dymkow 
             alignment: Alignment.center,
             child: Container(
               height: 300,
@@ -37,18 +69,23 @@ class _RecordingPage extends State<RecordingPage> {
                 borderRadius: BorderRadius.circular(20),
               ),
               padding: EdgeInsets.all(25),
-              child: Text(
-                "CAM",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.teal[500],
-                  fontSize: 60,
-                  fontWeight: FontWeight.bold,
-                )
-                )
+              child: _cameraController != null && _cameraController!.value.isInitialized
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: CameraPreview(_cameraController!),
+                  )
+                : Center(
+                    child: Text(
+                      "CAM",
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
+                      ),
+                    ),
+                  ),
             )
           )
-          // tekst dodawny w formie konwersacji
         ]
       )
     );

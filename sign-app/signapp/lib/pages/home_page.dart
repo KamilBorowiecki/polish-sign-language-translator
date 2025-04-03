@@ -6,9 +6,9 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.teal[300],
+      backgroundColor: Colors.green[300],
       appBar: AppBar(
-        backgroundColor: Colors.teal[500],
+        backgroundColor: Colors.green[600],
         centerTitle: true,
         title: const Text("H O M E   P A G E",
         style: TextStyle(
@@ -35,7 +35,7 @@ class HomePage extends StatelessWidget {
                 "SignApp",
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.teal[500],
+                  color: Colors.green[600],
                   fontSize: 60,
                   fontWeight: FontWeight.bold,
                 )
@@ -47,6 +47,7 @@ class HomePage extends StatelessWidget {
             alignment: Alignment.topCenter,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
+  
                 minimumSize: const Size(200, 60),
                 backgroundColor: Colors.white, 
                 shape: RoundedRectangleBorder(
@@ -56,7 +57,7 @@ class HomePage extends StatelessWidget {
               child: Text(
                 "START",
                 style: TextStyle(
-                  color: Colors.teal[500],
+                  color: Colors.green[600],
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
