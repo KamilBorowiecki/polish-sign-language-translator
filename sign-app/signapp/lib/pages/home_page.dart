@@ -7,9 +7,7 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onHorizontalDragEnd: (details) {
-        // Sprawdzamy, czy swipe odbył się w prawo
         if (details.primaryVelocity! > 0) {
-          // Jeśli tak, przechodzimy do RecordingPage
           Navigator.pushNamed(context, 'recordingpage');
         }
       },

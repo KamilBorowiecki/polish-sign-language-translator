@@ -11,9 +11,8 @@ class RecordingPage extends StatefulWidget {
 class _RecordingPage extends State<RecordingPage> {
   CameraController? _cameraController;
   List<CameraDescription>? cameras;
-  List<String> messages = ["Hello!", "How are you?", "Goodbye!"];
-  List<String> sentences = [];
-  String outMessage = "";
+  final List<String> entries1 = <String>["hello", "how are you", "helloas"];
+
   @override
   void initState() {
     super.initState();
@@ -44,9 +43,7 @@ class _RecordingPage extends State<RecordingPage> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onHorizontalDragEnd: (details) {
-        // Sprawdzamy, czy swipe odbył się w prawo
         if (details.primaryVelocity! < 0) {
-          // Jeśli tak, przechodzimy do RecordingPage
           Navigator.pushNamed(context, 'homepage');
         }
       },
@@ -78,7 +75,7 @@ class _RecordingPage extends State<RecordingPage> {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
               ),
-              padding: EdgeInsets.all(25),
+              padding: EdgeInsets.all(30),
               child: _cameraController != null && _cameraController!.value.isInitialized
                 ? ClipRRect(
                     borderRadius: BorderRadius.circular(20),
@@ -97,10 +94,11 @@ class _RecordingPage extends State<RecordingPage> {
             )
           ),
           Expanded(
-            flex: 1,
-            child: _buildMessageList()
-            
-            ),
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: _buildMessageList(),
+              ),
+          ),
         ]
       )
       )
@@ -108,64 +106,58 @@ class _RecordingPage extends State<RecordingPage> {
   }
 
   Widget _buildMessageList() {
-    for (var message in messages) {
-      if( message == " ") { 
-        sentences.insert(0, outMessage);
-        outMessage = "";
-        // messages.remove(message);
-        break;
-      } 
-
-      outMessage += message;
-      outMessage += " ";
-      // messages.remove(message);
-    }
-
-    outMessage = "";
-    //sentences = [];
     return ListView.separated(
+      padding: const EdgeInsets.only(left: 30, right: 30, top: 60, bottom: 80), 
+      itemCount: entries1.length,
       reverse: true,
-      itemCount: sentences.length,
-      itemBuilder: (context, index) {
-        return _buildMessageItem(sentences[index]);
+      itemBuilder: (BuildContext context, int index) {
+        return _buildMessageItem(entries1[index]);
       },
-    separatorBuilder: (context, index) {
-      return SizedBox(height: 25);  
-    },  
+      separatorBuilder: (BuildContext context, int index) => SizedBox(height: 25),
     );
   }
 
   Widget _buildMessageItem(String sentence) {
-  return LayoutBuilder(
-    builder: (context, constraints) {
-      double maxWidth = constraints.maxWidth; 
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        double maxWidth = constraints.maxWidth;
+        double sentenceLength(String text){
+          var count = 0.0;
+          for(var letter in text.split('')){
+            if(letter == ' '){
+              count += 5;
+            }
+            else{
+              count += 15;
+            }
+          }
+          return count;
+        }
+        double rightPadding = maxWidth - sentenceLength(sentence);
 
-      double rightPadding = (maxWidth * 0.4) - (sentence.length * 2.0);
-      rightPadding = rightPadding.clamp(8.0, maxWidth * 0.5); 
-
-      return Padding(
-        padding: EdgeInsets.only(
-          left: 8.0,  
-          right: rightPadding,  
-        ),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
+        return Padding(
+          padding: EdgeInsets.only( 
+            right: rightPadding,  
           ),
-          padding: const EdgeInsets.all(8),
-          child: Text(
-            sentence,
-            style: const TextStyle(
-              fontSize: 25,
-              fontWeight: FontWeight.bold,
-              color: Colors.green,
+          child: Container(
+            alignment: Alignment.centerLeft,
+            height: 60,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            padding: const EdgeInsets.all(15),
+            child: Text(
+              sentence,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.green,
+              ),
             ),
           ),
-        ),
-      );
-    },
-  );
-}
-
+        );
+      },
+    );
+  }
 }   
