@@ -295,7 +295,7 @@ Future<void> startImageStream() async {
         final img64 = base64Encode(bytes);
         socket?.emit('image', img64);
       }
-      await Future.delayed(Duration(milliseconds: 33)); 
+      await Future.delayed(Duration(milliseconds: 5000)); 
       isSending = false;
     });
   } on CameraException catch (e) {
