@@ -132,11 +132,13 @@
 
 import 'dart:convert';
 import 'dart:async';
-
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:socket_io_client/socket_io_client.dart' as socket_io;
 import 'package:logger/logger.dart';
+import 'package:image/image.dart' as img;
+
 
 
 class RecordingPage extends StatefulWidget {
@@ -155,10 +157,14 @@ class _RecordingPage extends State<RecordingPage> {
   String? outputCamera;
 
   @override
-  void initState() {
-    super.initState();
-    _initializeCamera();
-    try {
+void initState() {
+  super.initState();
+  initializeEverything();
+}
+
+Future<void> initializeEverything() async {
+  await _initializeCamera(); 
+  try {
     socket = socket_io.io(
       'http://192.168.68.112:5000',
       // 'http://172.20.10.2:5000',
@@ -167,23 +173,19 @@ class _RecordingPage extends State<RecordingPage> {
         .enableAutoConnect()
         .build()
     );
-    setupListeners();
     socket?.connect();
   } catch (e) {
     Logger().e('Socket init error: $e');
   }
+  setupListeners();
+  startImageStream(); 
+}
 
-    setupListeners();
-
-     _timer = Timer.periodic(Duration(milliseconds: 100), (timer) {
-      sendCameraFrame();
-    });
-
-  }
 
   void setupListeners(){
     socket?.on('connect', (_) => Logger().i('Connected'));
     socket?.on('response_back', (stringData){
+      Logger().i('respnse back dziala');
       setState(() {
         outputCamera = stringData;
         Logger().i(stringData);
@@ -203,7 +205,7 @@ class _RecordingPage extends State<RecordingPage> {
   bool isCapturing = false; 
 
 Future<void> sendCameraFrame() async {
-  if (_cameraController != null && _cameraController!.value.isInitialized && !isCapturing) {
+  if (_cameraController != null && _cameraController!.value.isRecordingVideo && !isCapturing) {
     isCapturing = true;
 
     try {
@@ -223,6 +225,84 @@ Future<void> sendCameraFrame() async {
     }
   }
 }
+
+Future<Uint8List?> convertCameraImageToJpeg(CameraImage cameraImage) async {
+  try {
+    if (cameraImage.format.group != ImageFormatGroup.yuv420) {
+      return null;
+    }
+
+    final int width = cameraImage.width;
+    final int height = cameraImage.height;
+
+    final imgData = cameraImage.planes;
+    final yPlane = imgData[0].bytes;
+    final uPlane = imgData[1].bytes;
+    final vPlane = imgData[2].bytes;
+
+    final img.Image convertedImage = img.Image(width: width, height: height);
+
+    int uvRowStride = imgData[1].bytesPerRow;
+    int uvPixelStride = imgData[1].bytesPerPixel ?? 1;
+
+    for (int y = 0; y < height; y++) {
+      for (int x = 0; x < width; x++) {
+        final int uvIndex = uvPixelStride * (x ~/ 2) + uvRowStride * (y ~/ 2);
+        final int index = y * width + x;
+
+        final yp = yPlane[index];
+        final up = uPlane[uvIndex];
+        final vp = vPlane[uvIndex];
+
+        int r = (yp + (1.370705 * (vp - 128))).round();
+        int g = (yp - (0.698001 * (vp - 128)) - (0.337633 * (up - 128))).round();
+        int b = (yp + (1.732446 * (up - 128))).round();
+
+        r = r.clamp(0, 255);
+        g = g.clamp(0, 255);
+        b = b.clamp(0, 255);
+
+        convertedImage.setPixelRgba(x, y, r, g, b, 255);
+      }
+    }
+
+    final jpeg = img.encodeJpg(convertedImage, quality: 85);
+    return Uint8List.fromList(jpeg);
+  } catch (e) {
+    print('Error converting image: $e');
+    return null;
+  }
+}
+
+Future<void> startImageStream() async {
+  if (_cameraController == null) {
+    Logger().i('camera controller is null');
+    return;
+  }
+  Logger().i("start image stream");
+  if (_cameraController!.value.isStreamingImages) {
+       Logger().i('The camera is already streaming images.');
+  }
+
+  try {
+    Logger().i("przed start image stream");
+    bool isSending = false;
+    await _cameraController!.startImageStream((CameraImage image) async {
+      if (isSending) return;
+      isSending = true;
+      final bytes = await convertCameraImageToJpeg(image);
+      if (bytes != null) {
+        final img64 = base64Encode(bytes);
+        socket?.emit('image', img64);
+      }
+      await Future.delayed(Duration(milliseconds: 33)); 
+      isSending = false;
+    });
+  } on CameraException catch (e) {
+    Logger().e('Stream error: ${e.description}');
+  }
+}
+
 
 
   Future<void> _initializeCamera() async {
