@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
+  <title>Odbiornik obrazu</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.1/socket.io.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f5f5f5;
+    }
+    .video img {
+      max-width: 90%;
+      height: auto;
+      border: 2px solid #ccc;
+      margin-top: 20px;
+    }
+    #output {
+      font-size: 24px;
+      margin-top: 20px;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <h1>Odbiór obrazu z backendu</h1>
+
+  <div class="video">
+    <img id="image" alt="Oczekiwanie na obraz..." />
+  </div>
+
+  <div id="output">Czekam na dane...</div>
+
+  <script>
+    const socket = io('http://localhost:5000');  // lub IP serwera jeśli nie lokalnie
+    const imageElement = document.getElementById('image');
+    const output = document.getElementById('output');
+
+    socket.on('connect', () => {
+      console.log("Połączono z backendem przez Socket.IO:", socket.connected);
+    });
+
+    // Odbiór obrazu w formacie base64 z backendu
+    socket.on('image_back', (base64Image) => {
+      imageElement.src = `data:image/jpeg;base64,${base64Image}`;
+    });
+
+    // Odbiór rozpoznanego zdania
+    socket.on('response_back', (sentence) => {
+      console.log("Rozpoznane zdanie:", sentence);
+      output.innerText = sentence;
+    });
+  </script>
+</body>
+</html>

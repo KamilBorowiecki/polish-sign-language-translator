@@ -154,7 +154,7 @@ class _RecordingPage extends State<RecordingPage> {
   List<CameraDescription>? cameras;
   final List<String> entries1 = <String>["hello", "how are you", "helloas"];
   Timer? _timer;
-  String? outputCamera;
+  String? output;
 
   @override
 void initState() {
@@ -166,7 +166,8 @@ Future<void> initializeEverything() async {
   await _initializeCamera(); 
   try {
     socket = socket_io.io(
-      'http://192.168.68.112:5000',
+      'http://192.168.68.108:5000',
+      // 'http://192.168.0.105:5000',
       // 'http://172.20.10.2:5000',
       socket_io.OptionBuilder()
         .setTransports(['websocket'])
@@ -187,7 +188,7 @@ Future<void> initializeEverything() async {
     socket?.on('response_back', (stringData){
       Logger().i('respnse back dziala');
       setState(() {
-        outputCamera = stringData;
+        entries1[0] = stringData;
         Logger().i(stringData);
       });
     });
@@ -269,7 +270,7 @@ Future<Uint8List?> convertCameraImageToJpeg(CameraImage cameraImage) async {
     final jpeg = img.encodeJpg(convertedImage, quality: 85);
     return Uint8List.fromList(jpeg);
   } catch (e) {
-    print('Error converting image: $e');
+    Logger().e('Error converting image: $e');
     return null;
   }
 }
@@ -295,7 +296,7 @@ Future<void> startImageStream() async {
         final img64 = base64Encode(bytes);
         socket?.emit('image', img64);
       }
-      await Future.delayed(Duration(milliseconds: 5000)); 
+      await Future.delayed(Duration(milliseconds: 66)); 
       isSending = false;
     });
   } on CameraException catch (e) {
@@ -309,7 +310,7 @@ Future<void> startImageStream() async {
     cameras = await availableCameras();
     if (cameras != null && cameras!.isNotEmpty) {
       _cameraController = CameraController(
-        cameras![0], 
+        cameras![1], 
         ResolutionPreset.high,
       );
       await _cameraController!.initialize();
@@ -356,15 +357,7 @@ Future<void> startImageStream() async {
                 borderRadius: BorderRadius.circular(20),
               ),
               padding: EdgeInsets.all(30),
-              child: outputCamera != null
-            ? ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Image.memory(
-                  base64Decode(outputCamera!.split(',').last),
-                  fit: BoxFit.cover, 
-                ),
-              )
-            : _cameraController != null && _cameraController!.value.isInitialized
+              child: _cameraController != null && _cameraController!.value.isInitialized
                 ? ClipRRect(
                     borderRadius: BorderRadius.circular(20),
                     child: CameraPreview(_cameraController!),
