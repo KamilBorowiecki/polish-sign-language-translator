@@ -14,13 +14,16 @@ from tensorflow.keras.layers import LSTM, Dense, Input
 app = Flask(__name__, template_folder="templates")
 sio = SocketIO(app, cors_allowed_origins="*")
 
+framesWithoutHands = 0
+lastWord = ""
 sequence = []
 sentence = ""
 predictions = []
 actions = np.array(['dzien', 'dobry', 'kocham', 'ciebie', 'do', 'widziec'])
-threshold = 0.6
+threshold = 0.60
+nowy_rozmiar = (650, 500)
 model = Sequential([
-    Input(shape=(30,1662)),  
+    Input(shape=(10,1662)),  
     LSTM(64, return_sequences=True, activation='tanh'),
     LSTM(128, return_sequences=True, activation='tanh'),
     LSTM(64, return_sequences=False, activation='tanh'),
@@ -28,7 +31,7 @@ model = Sequential([
     Dense(32, activation='relu'),
     Dense(actions.shape[0], activation='softmax')  
 ])
-model.load_weights('action_good(15frames).keras')
+model.load_weights('action_99(10frames).keras')
 mp_holistic = mp.solutions.holistic
 holistic = mp_holistic.Holistic(min_detection_confidence=0.5, min_tracking_confidence=0.5)
 mp_drawing = mp.solutions.drawing_utils
@@ -77,36 +80,59 @@ def handle_connect():
 # gdzie bede sprawdzal czy bylo conajmniej 30 obrazow
 # a potem bede detektowal tak jak wczesniej
 def image(data_image):
-    global sequence, sentence, predictions
+    global sequence, sentence, predictions, framesWithoutHands, lastWord, nowy_rozmiar
     b = io.BytesIO(base64.b64decode(data_image))
     pimg = Image.open(b)
+    width, height = pimg.size
+    pimg = pimg.crop((0, 0, width-100, height))
     pimg = pimg.rotate(90, expand=True)
+    pimg = pimg.resize(nowy_rozmiar)
 
 
     # DO WHATEVER IMAGE PROCESSING HERE{
     frame = cv2.cvtColor(np.array(pimg), cv2.COLOR_RGB2BGR)
     image, results = mediapipe_detection(frame, holistic)
-    draw_styled_landmarks(image, results)
-    keypoints = extract_keypoints(results)
-    sequence.append(keypoints)
-    sequence = sequence[-15:]
+    # draw_styled_landmarks(image, results)
 
-    if len(sequence) == 15:
-        res = model.predict(np.expand_dims(sequence, axis=0))[0]
-        print(actions[np.argmax(res)])
-        predictions.append(np.argmax(res))
+    if (not results.left_hand_landmarks) and (not results.right_hand_landmarks):
+        framesWithoutHands += 1
+        if framesWithoutHands == 10:
+            sequence = []
+            predictions = []
 
-        if np.unique(predictions[-7:])[0]==np.argmax(res): 
-            if res[np.argmax(res)] > threshold: 
-                sentence = actions[np.argmax(res)]
+
+    else:
+        framesWithoutHands = 0
+        keypoints = extract_keypoints(results)
+        sequence.append(keypoints)
+        sequence = sequence[-10:]
+
+        if len(sequence) == 10:
+            res = model.predict(np.expand_dims(sequence, axis=0))[0]
+            predictions.append(np.argmax(res))
+
+            if np.unique(predictions[-5:])[0]==np.argmax(res): 
+                if res[np.argmax(res)] > threshold and lastWord != str(actions[np.argmax(res)]): 
+                    lastWord = str(actions[np.argmax(res)])
+                    sentence += str(actions[np.argmax(res)])
+                    sentence += " "
+                    sequence = []
+                    predictions = []
+
     #}
-
+    print("moja zmienna: " + str(sentence))
     _, buffer = cv2.imencode('.jpg', image)
     image_base64 = base64.b64encode(buffer).decode('utf-8')
     emit('image_back', image_base64, broadcast=True)
 
-    if sentence:
+    if sentence and framesWithoutHands == 10:
+        sentence = sentence[:-1]
         emit('response_back', sentence, broadcast=True)
+        sentence = ""
+        lastWord = ""
+        sequence = []
+        predictions = []
+
 
 @app.route('/')
 def home():

@@ -152,9 +152,11 @@ class _RecordingPage extends State<RecordingPage> {
   socket_io.Socket? socket;
   CameraController? _cameraController;
   List<CameraDescription>? cameras;
-  final List<String> entries1 = <String>["hello", "how are you", "helloas"];
+  final List<String> texts = [];
+  int elementOfTexts = 0;
   Timer? _timer;
   String? output;
+
 
   @override
 void initState() {
@@ -166,8 +168,8 @@ Future<void> initializeEverything() async {
   await _initializeCamera(); 
   try {
     socket = socket_io.io(
-      'http://192.168.68.108:5000',
-      // 'http://192.168.0.105:5000',
+      //'http://192.168.68.108:5000',
+       'http://192.168.0.105:5000',
       // 'http://172.20.10.2:5000',
       socket_io.OptionBuilder()
         .setTransports(['websocket'])
@@ -188,7 +190,7 @@ Future<void> initializeEverything() async {
     socket?.on('response_back', (stringData){
       Logger().i('respnse back dziala');
       setState(() {
-        entries1[0] = stringData;
+        texts.insert(0, stringData);
         Logger().i(stringData);
       });
     });
@@ -267,7 +269,7 @@ Future<Uint8List?> convertCameraImageToJpeg(CameraImage cameraImage) async {
       }
     }
 
-    final jpeg = img.encodeJpg(convertedImage, quality: 85);
+    final jpeg = img.encodeJpg(convertedImage, quality: 70);
     return Uint8List.fromList(jpeg);
   } catch (e) {
     Logger().e('Error converting image: $e');
@@ -296,7 +298,7 @@ Future<void> startImageStream() async {
         final img64 = base64Encode(bytes);
         socket?.emit('image', img64);
       }
-      await Future.delayed(Duration(milliseconds: 66)); 
+      await Future.delayed(Duration(milliseconds: 50)); 
       isSending = false;
     });
   } on CameraException catch (e) {
@@ -311,7 +313,7 @@ Future<void> startImageStream() async {
     if (cameras != null && cameras!.isNotEmpty) {
       _cameraController = CameraController(
         cameras![1], 
-        ResolutionPreset.high,
+        ResolutionPreset.medium,
       );
       await _cameraController!.initialize();
       if (mounted) {
@@ -378,47 +380,38 @@ Future<void> startImageStream() async {
   }
 
   Widget _buildMessageList() {
+    if(texts.length > 5){
+      texts.removeLast();
+    }
     return ListView.separated(
       padding: const EdgeInsets.only(left: 30, right: 30, top: 60, bottom: 80), 
-      itemCount: entries1.length,
+      itemCount: texts.length,
       reverse: true,
       itemBuilder: (BuildContext context, int index) {
-        return _buildMessageItem(entries1[index]);
+        return _buildMessageItem(texts[index]);
       },
       separatorBuilder: (BuildContext context, int index) => SizedBox(height: 25),
     );
   }
 
   Widget _buildMessageItem(String sentence) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        double maxWidth = constraints.maxWidth;
-        double sentenceLength(String text){
-          var count = 0.0;
-          for(var letter in text.split('')){
-            if(letter == ' '){
-              count += 5;
-            }
-            else{
-              count += 15;
-            }
-          }
-          return count;
-        }
-        double rightPadding = maxWidth - sentenceLength(sentence);
-
-        return Padding(
-          padding: EdgeInsets.only( 
-            right: rightPadding,  
+    return Padding(
+      padding: const EdgeInsets.only(left: 10, right: 0, top: 0, bottom: 10),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width,
           ),
           child: Container(
-            alignment: Alignment.centerLeft,
-            height: 60,
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(20),
             ),
-            padding: const EdgeInsets.all(15),
+            padding: const EdgeInsets.symmetric(
+              vertical: 12,
+              horizontal: 16,
+            ),
             child: Text(
               sentence,
               style: const TextStyle(
@@ -428,8 +421,8 @@ Future<void> startImageStream() async {
               ),
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }  
