@@ -67,8 +67,8 @@ To switch to the front camera, change this line in _initializeCamera():
 
 ```dart
 cameras![1] // back camera
-to:
 ```
+to:
 
 ```dart
 cameras![0] // front camera
