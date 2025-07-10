@@ -17,7 +17,7 @@ Currently supports 6 Polish Sign Language gestures, including:
 
 - 🔍 **Sign Language Recognition** — Detects and identifies hand gestures using a trained model.
 - 🕒 **Real-Time Translation** — Converts gestures into text on the fly using your webcam or phone camera.
-- 💬 **Predefined Gestures** — Currently supports 6 Polish signs: _Dzień dobry_, _Kocham_, _Ciebie_, _Do widzenia_, and two more.
+- 💬 **Predefined Gestures** — Currently supports 6 Polish signs: _Dzień_, _Dobry_, _Kocham_, _Ciebie_, _Do_, _Widziec_.
 - 🌍 **Expandable Architecture** — Easily train the system on new signs or different sign languages.
 - 🧠 **Machine Learning Powered** — Leverages modern deep learning techniques for accurate gesture recognition.
 - 💻 **User-Friendly Interface** — Lightweight, intuitive, and easy to use.
